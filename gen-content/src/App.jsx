@@ -10,49 +10,68 @@ const TABS = [
 
 function App() {
   const [activeTab, setActiveTab] = useState('outfit')
-  const [generatedImage, setGeneratedImage] = useState(null)
+  const [generatedImages, setGeneratedImages] = useState([])
   const [isGenerating, setIsGenerating] = useState(false)
   const [error, setError] = useState(null)
-  const lastFormDataRef = useRef(null)
+  const [batchProgress, setBatchProgress] = useState(null)
+  const lastRequestRef = useRef(null)
 
-  const handleGenerate = async (formData) => {
-    lastFormDataRef.current = formData
+  const handleGenerate = async (requestPayload) => {
+    lastRequestRef.current = requestPayload
     setIsGenerating(true)
     setError(null)
-    setGeneratedImage(null)
+    setGeneratedImages([])
 
     try {
-      const res = await fetch('/api/generate-image', {
-        method: 'POST',
-        body: formData,
-      })
-
-      const data = await res.json()
-
-      if (!res.ok) {
-        throw new Error(data.error || 'Tạo ảnh thất bại')
+      const totalOutfits = requestPayload?.outfitFiles?.length || 0
+      if (!totalOutfits) {
+        throw new Error('Vui lòng chọn ít nhất 1 ảnh trang phục')
       }
 
-      if (data.success) {
-        setGeneratedImage(data.image)
-      } else {
-        throw new Error(data.error || 'Không có ảnh nào được tạo')
+      setBatchProgress({ current: 0, total: totalOutfits })
+
+      for (let index = 0; index < totalOutfits; index += 1) {
+        const outfitFile = requestPayload.outfitFiles[index]
+        const formData = new FormData()
+        formData.append('outfit', outfitFile)
+
+        if (requestPayload.modelFile) formData.append('model', requestPayload.modelFile)
+        if (requestPayload.backgroundFile) formData.append('background', requestPayload.backgroundFile)
+        formData.append('aspectRatio', requestPayload.aspectRatio || '9:16')
+        formData.append('resolution', requestPayload.resolution || '2K')
+
+        setBatchProgress({ current: index + 1, total: totalOutfits })
+
+        const res = await fetch('/api/generate-image', {
+          method: 'POST',
+          body: formData,
+        })
+
+        const data = await res.json()
+
+        if (!res.ok) {
+          throw new Error(
+            data.error || `Tạo ảnh thất bại ở outfit ${index + 1}/${totalOutfits}`,
+          )
+        }
+
+        if (data.success) {
+          setGeneratedImages((prev) => [...prev, data.image])
+        } else {
+          throw new Error(data.error || 'Không có ảnh nào được tạo')
+        }
       }
     } catch (err) {
       setError(err.message)
     } finally {
       setIsGenerating(false)
+      setBatchProgress(null)
     }
   }
 
   const handleRetry = () => {
-    if (!lastFormDataRef.current) return
-    const prev = lastFormDataRef.current
-    const formData = new FormData()
-    for (const [key, value] of prev.entries()) {
-      formData.append(key, value)
-    }
-    handleGenerate(formData)
+    if (!lastRequestRef.current) return
+    handleGenerate(lastRequestRef.current)
   }
 
   return (
@@ -73,10 +92,11 @@ function App() {
           {/* Right Panel — Result */}
           <div className="animate-fade-in" style={{ animationDelay: '0.2s' }}>
             <ResultPanel
-              image={generatedImage}
+              images={generatedImages}
               isGenerating={isGenerating}
               error={error}
               onRetry={handleRetry}
+              batchProgress={batchProgress}
             />
           </div>
         </div>

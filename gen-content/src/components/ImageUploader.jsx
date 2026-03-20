@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 export default function ImageUploader({
   id,
@@ -8,30 +8,57 @@ export default function ImageUploader({
   defaultPreview = null,
   onFileSelect,
   accept = 'image/png,image/jpeg,image/webp',
+  multiple = false,
   icon,
 }) {
   const [preview, setPreview] = useState(defaultPreview)
+  const [previewList, setPreviewList] = useState([])
+  const [activePreviewIndex, setActivePreviewIndex] = useState(0)
   const [isDragOver, setIsDragOver] = useState(false)
   const [fileName, setFileName] = useState(null)
   const fileInputRef = useRef(null)
 
-  const handleFile = (file) => {
-    if (!file) return
-    setFileName(file.name)
-    const reader = new FileReader()
-    reader.onload = (e) => setPreview(e.target.result)
-    reader.readAsDataURL(file)
-    onFileSelect(file)
+  useEffect(() => {
+    return () => {
+      previewList.forEach((item) => {
+        URL.revokeObjectURL(item.url)
+      })
+    }
+  }, [previewList])
+
+  const handleFiles = (fileList) => {
+    const files = Array.from(fileList || [])
+    if (!files.length) return
+    const firstFile = files[0]
+    const label = multiple && files.length > 1 ? `${files.length} files selected` : firstFile.name
+    setFileName(label)
+    if (multiple) {
+      previewList.forEach((item) => {
+        URL.revokeObjectURL(item.url)
+      })
+      const nextPreviewList = files.map((file) => ({
+        name: file.name,
+        url: URL.createObjectURL(file),
+      }))
+      setPreviewList(nextPreviewList)
+      setActivePreviewIndex(0)
+      setPreview(nextPreviewList[0]?.url || null)
+    } else {
+      const reader = new FileReader()
+      reader.onload = (e) => setPreview(e.target.result)
+      reader.readAsDataURL(firstFile)
+    }
+    onFileSelect(multiple ? files : firstFile)
   }
 
   const handleChange = (e) => {
-    handleFile(e.target.files?.[0])
+    handleFiles(e.target.files)
   }
 
   const handleDrop = (e) => {
     e.preventDefault()
     setIsDragOver(false)
-    handleFile(e.dataTransfer.files?.[0])
+    handleFiles(e.dataTransfer.files)
   }
 
   const handleDragOver = (e) => {
@@ -45,13 +72,38 @@ export default function ImageUploader({
 
   const handleClear = (e) => {
     e.stopPropagation()
+    previewList.forEach((item) => {
+      URL.revokeObjectURL(item.url)
+    })
+    setPreviewList([])
+    setActivePreviewIndex(0)
     setPreview(defaultPreview)
     setFileName(null)
-    onFileSelect(null)
+    onFileSelect(multiple ? [] : null)
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
   const hasCustomImage = fileName !== null
+  const hasMultiplePreview = multiple && previewList.length > 1
+  const activePreview = hasMultiplePreview ? previewList[activePreviewIndex] : null
+
+  const showPreviousPreview = (e) => {
+    e.stopPropagation()
+    if (!previewList.length) return
+    const nextIndex =
+      activePreviewIndex === 0 ? previewList.length - 1 : activePreviewIndex - 1
+    setActivePreviewIndex(nextIndex)
+    setPreview(previewList[nextIndex].url)
+  }
+
+  const showNextPreview = (e) => {
+    e.stopPropagation()
+    if (!previewList.length) return
+    const nextIndex =
+      activePreviewIndex === previewList.length - 1 ? 0 : activePreviewIndex + 1
+    setActivePreviewIndex(nextIndex)
+    setPreview(previewList[nextIndex].url)
+  }
 
   return (
     <div className="group">
@@ -97,10 +149,33 @@ export default function ImageUploader({
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             <div className="absolute bottom-0 left-0 right-0 p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
               <p className="text-white text-xs truncate">
-                {fileName || (defaultPreview ? 'Ảnh mặc định' : '')}
+                {activePreview?.name || fileName || (defaultPreview ? 'Ảnh mặc định' : '')}
               </p>
               <p className="text-white/70 text-xs mt-0.5">Nhấn để thay thế</p>
             </div>
+            {hasMultiplePreview && (
+              <>
+                <button
+                  type="button"
+                  onClick={showPreviousPreview}
+                  className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/45 hover:bg-black/65 text-white text-lg flex items-center justify-center transition-colors"
+                  aria-label="Ảnh trước"
+                >
+                  ‹
+                </button>
+                <button
+                  type="button"
+                  onClick={showNextPreview}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/45 hover:bg-black/65 text-white text-lg flex items-center justify-center transition-colors"
+                  aria-label="Ảnh tiếp theo"
+                >
+                  ›
+                </button>
+                <div className="absolute top-2 left-2 px-2 py-0.5 rounded-full bg-black/60 text-white text-[10px] font-medium">
+                  {activePreviewIndex + 1}/{previewList.length}
+                </div>
+              </>
+            )}
             {!required && !hasCustomImage && defaultPreview && (
               <div className="absolute top-2 right-2">
                 <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-accent/90 text-white">
@@ -121,11 +196,36 @@ export default function ImageUploader({
           </div>
         )}
 
+        {hasMultiplePreview && (
+          <div className="p-2 border-t border-border bg-surface">
+            <div className="flex items-center gap-2 overflow-x-auto">
+              {previewList.map((item, index) => (
+                <button
+                  key={`${item.name}-${index}`}
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setActivePreviewIndex(index)
+                    setPreview(item.url)
+                  }}
+                  className={`shrink-0 w-14 h-14 rounded-lg overflow-hidden border-2 transition-colors ${
+                    index === activePreviewIndex ? 'border-primary' : 'border-transparent'
+                  }`}
+                  aria-label={`Xem preview ${index + 1}`}
+                >
+                  <img src={item.url} alt={item.name} className="w-full h-full object-cover" />
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         <input
           ref={fileInputRef}
           type="file"
           id={id}
           accept={accept}
+          multiple={multiple}
           onChange={handleChange}
           className="hidden"
         />

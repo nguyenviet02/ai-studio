@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import ImageUploader from './ImageUploader'
 
 export default function OutfitTab({ onGenerate, isGenerating }) {
-  const [outfitFile, setOutfitFile] = useState(null)
+  const [outfitFiles, setOutfitFiles] = useState([])
   const [modelFile, setModelFile] = useState(null)
   const [backgroundFile, setBackgroundFile] = useState(null)
   const [defaultModel, setDefaultModel] = useState(null)
@@ -24,16 +24,15 @@ export default function OutfitTab({ onGenerate, isGenerating }) {
   }, [])
 
   const handleSubmit = () => {
-    if (!outfitFile) return
+    if (!outfitFiles.length) return
 
-    const formData = new FormData()
-    formData.append('outfit', outfitFile)
-    if (modelFile) formData.append('model', modelFile)
-    if (backgroundFile) formData.append('background', backgroundFile)
-    formData.append('aspectRatio', aspectRatio)
-    formData.append('resolution', resolution)
-
-    onGenerate(formData)
+    onGenerate({
+      outfitFiles,
+      modelFile,
+      backgroundFile,
+      aspectRatio,
+      resolution,
+    })
   }
 
   const aspectRatios = ['9:16', '16:9', '1:1', '3:4', '4:3']
@@ -56,10 +55,11 @@ export default function OutfitTab({ onGenerate, isGenerating }) {
         <ImageUploader
           id="outfit-upload"
           label="Ảnh Trang Phục"
-          description="PNG, JPEG hoặc WebP — tối đa 10MB"
+          description="PNG, JPEG hoặc WebP — tối đa 10MB (có thể chọn nhiều ảnh)"
           required
+          multiple
           icon="👕"
-          onFileSelect={setOutfitFile}
+          onFileSelect={setOutfitFiles}
         />
 
         {/* Optional Uploads */}
@@ -135,11 +135,11 @@ export default function OutfitTab({ onGenerate, isGenerating }) {
         <button
           id="generate-btn"
           onClick={handleSubmit}
-          disabled={!outfitFile || isGenerating}
+          disabled={!outfitFiles.length || isGenerating}
           className={`
             w-full py-3.5 rounded-xl font-semibold text-sm transition-all duration-300 cursor-pointer
             flex items-center justify-center gap-2
-            ${outfitFile && !isGenerating
+            ${outfitFiles.length && !isGenerating
               ? 'bg-gradient-to-r from-primary to-primary-dark text-white shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40 hover:scale-[1.01] active:scale-[0.99]'
               : 'bg-surface-hover text-text-muted cursor-not-allowed'
             }
@@ -155,7 +155,7 @@ export default function OutfitTab({ onGenerate, isGenerating }) {
             </>
           ) : (
             <>
-              ✨ Tạo Ảnh
+              ✨ Tạo {outfitFiles.length > 1 ? `${outfitFiles.length} Ảnh` : 'Ảnh'}
             </>
           )}
         </button>
