@@ -1,0 +1,14 @@
+{
+  "name": "veo3",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently -n be,fe -c blue,green \"npm run dev:be\" \"npm run dev:fe\"",
+    "dev:be": "npm run dev --prefix backend",
+    "dev:fe": "npm run dev --prefix gen-content",
+    "build:fe": "npm run build --prefix gen-content",
+    "start:be": "npm run start --prefix backend"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}
