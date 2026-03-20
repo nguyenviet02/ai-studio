@@ -7,6 +7,7 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
     port: 6100,
+    allowedHosts: ['ai-studio.vietnx.io.vn'],
     proxy: {
       '/api': {
         target: 'http://localhost:6200',

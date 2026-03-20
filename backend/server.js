@@ -19,7 +19,9 @@ const MODEL = "gemini-3.1-flash-image";
 const API_URL = `${PROXY_BASE}/v1beta/models/${MODEL}:generateContent`;
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: ["http://localhost:6100", "https://ai-studio.vietnx.io.vn"],
+}));
 app.use(express.json({ limit: "50mb" }));
 
 // Ensure uploads directory exists
