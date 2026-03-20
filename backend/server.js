@@ -11,7 +11,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const PORT = 3001;
+const PORT = 6200;
 
 const API_KEY = "nguyenviet02";
 const PROXY_BASE = "https://ai-proxy.vietnx.io.vn";
