@@ -5,6 +5,7 @@ export default function OutfitTab({ onGenerate, isGenerating }) {
   const [outfitFiles, setOutfitFiles] = useState([])
   const [modelFile, setModelFile] = useState(null)
   const [backgroundFile, setBackgroundFile] = useState(null)
+  const [customPrompt, setCustomPrompt] = useState('')
   const [defaultModel, setDefaultModel] = useState(null)
   const [defaultBackground, setDefaultBackground] = useState(null)
   const [aspectRatio, setAspectRatio] = useState('9:16')
@@ -30,6 +31,7 @@ export default function OutfitTab({ onGenerate, isGenerating }) {
       outfitFiles,
       modelFile,
       backgroundFile,
+      customPrompt: customPrompt.trim(),
       aspectRatio,
       resolution,
     })
@@ -80,6 +82,24 @@ export default function OutfitTab({ onGenerate, isGenerating }) {
             defaultPreview={defaultBackground}
             onFileSelect={setBackgroundFile}
           />
+        </div>
+
+        <div>
+          <label htmlFor="custom-prompt" className="text-sm font-medium text-text-primary mb-2 block">
+            ✍️ Prompt Tùy Chỉnh
+          </label>
+          <textarea
+            id="custom-prompt"
+            rows={4}
+            maxLength={1000}
+            value={customPrompt}
+            onChange={(e) => setCustomPrompt(e.target.value)}
+            placeholder="Ví dụ: thêm ánh sáng studio mềm, phong cách thời trang cao cấp, màu sắc tự nhiên..."
+            className="w-full rounded-xl border border-border bg-surface px-3.5 py-2.5 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/40 resize-y min-h-[110px]"
+          />
+          <p className="mt-1 text-xs text-text-muted text-right">
+            {customPrompt.length}/1000
+          </p>
         </div>
 
         {/* Settings */}

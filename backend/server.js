@@ -117,13 +117,19 @@ app.post(
 
       const aspectRatio = req.body?.aspectRatio || "9:16";
       const resolution = req.body?.resolution || "2K";
+      const customPromptRaw = req.body?.customPrompt;
+      const customPrompt =
+        typeof customPromptRaw === "string" ? customPromptRaw.trim().slice(0, 1000) : "";
+      const finalPrompt = customPrompt
+        ? `${PROMPT_CHANGE_OUTFIT}\n\nUser custom instructions:\n${customPrompt}`
+        : PROMPT_CHANGE_OUTFIT;
 
       // Build the prompt — model is image 1, outfit is image 2, background is image 3
       const body = {
         contents: [
           {
             parts: [
-              { text: PROMPT_CHANGE_OUTFIT },
+              { text: finalPrompt },
               {
                 inline_data: {
                   mime_type: modelData.mime,

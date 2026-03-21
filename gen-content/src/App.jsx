@@ -37,6 +37,7 @@ function App() {
 
         if (requestPayload.modelFile) formData.append('model', requestPayload.modelFile)
         if (requestPayload.backgroundFile) formData.append('background', requestPayload.backgroundFile)
+        if (requestPayload.customPrompt) formData.append('customPrompt', requestPayload.customPrompt)
         formData.append('aspectRatio', requestPayload.aspectRatio || '9:16')
         formData.append('resolution', requestPayload.resolution || '2K')
 
